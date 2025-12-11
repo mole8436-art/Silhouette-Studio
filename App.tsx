@@ -51,8 +51,7 @@ const App: React.FC = () => {
     if (storedKey) {
       setApiKey(storedKey);
       setRememberKey(true);
-    } else {
-      setShowApiInput(true);
+      setShowApiInput(false);
     }
   }, []);
 
@@ -201,13 +200,21 @@ const App: React.FC = () => {
           {/* Left Column: Controls */}
           <div className="lg:col-span-4 space-y-6">
             
-            {/* API Key Section */}
-            {(showApiInput || !apiKey) && (
+            {/* API Key Section - Collapsible */}
+            {showApiInput && (
               <div className="bg-slate-900 rounded-2xl p-6 border border-indigo-500/30 shadow-xl animate-fadeIn">
-                <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                  <Key className="w-4 h-4 text-indigo-400" />
-                  API 키 설정
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                    <Key className="w-4 h-4 text-indigo-400" />
+                    API 키 설정
+                  </h3>
+                  <button
+                    onClick={() => setShowApiInput(false)}
+                    className="text-slate-400 hover:text-slate-300 text-xs"
+                  >
+                    닫기
+                  </button>
+                </div>
                 <div className="space-y-3">
                   <input 
                     type="password"
