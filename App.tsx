@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { generateSilhouetteImage } from './services/geminiService';
-import { SilhouetteConfig, GenerationResult } from './types';
+import { SilhouetteConfig } from './types';
 import { ColorPicker } from './components/ColorPicker';
 import { Logo } from './components/Logo';
 import { 
@@ -10,12 +9,7 @@ import {
   PenTool, 
   Sparkles, 
   Copy, 
-  Download, 
-  RefreshCw,
-  User,
-  AlertCircle,
-  Key,
-  ExternalLink
+  User
 } from 'lucide-react';
 
 const INITIAL_CONFIG: SilhouetteConfig = {
@@ -33,45 +27,8 @@ const INITIAL_CONFIG: SilhouetteConfig = {
 const COLOR_PRESETS = ['#000000', '#FFFFFF', '#FF0000', '#808080', '#1E3A8A', '#064E3B'];
 
 const App: React.FC = () => {
-  const [apiKey, setApiKey] = useState('');
-  const [rememberKey, setRememberKey] = useState(false);
-  const [showApiInput, setShowApiInput] = useState(false);
-
   const [config, setConfig] = useState<SilhouetteConfig>(INITIAL_CONFIG);
-  const [result, setResult] = useState<GenerationResult>({
-    imageUrl: null,
-    promptUsed: '',
-    loading: false,
-    error: null,
-  });
-
-  // Load API Key from local storage on mount
-  useEffect(() => {
-    const storedKey = localStorage.getItem('gemini_api_key');
-    if (storedKey) {
-      setApiKey(storedKey);
-      setRememberKey(true);
-      setShowApiInput(false);
-    }
-  }, []);
-
-  // Handle API Key persistence
-  const handleApiKeyChange = (value: string) => {
-    setApiKey(value);
-    if (rememberKey) {
-      localStorage.setItem('gemini_api_key', value);
-    }
-  };
-
-  const toggleRememberKey = () => {
-    const newState = !rememberKey;
-    setRememberKey(newState);
-    if (newState) {
-      localStorage.setItem('gemini_api_key', apiKey);
-    } else {
-      localStorage.removeItem('gemini_api_key');
-    }
-  };
+  const [promptUsed, setPromptUsed] = useState<string>('');
 
   // Construct the prompt based on configuration
   const constructPrompt = useCallback(() => {
@@ -133,37 +90,15 @@ const App: React.FC = () => {
 
   // Update preview prompt whenever config changes
   useEffect(() => {
-    setResult(prev => ({ ...prev, promptUsed: constructPrompt() }));
+    setPromptUsed(constructPrompt());
   }, [constructPrompt]);
 
-  const handleGenerate = async () => {
-    if (!apiKey && !process.env.API_KEY) {
-      setResult(prev => ({ ...prev, error: "API 키를 입력해주세요." }));
-      setShowApiInput(true);
-      return;
-    }
-
-    setResult(prev => ({ ...prev, loading: true, error: null }));
-    const prompt = constructPrompt();
-    
-    try {
-      const imageUrl = await generateSilhouetteImage(prompt, apiKey);
-      setResult(prev => ({ 
-        ...prev, 
-        imageUrl, 
-        loading: false 
-      }));
-    } catch (err: any) {
-      setResult(prev => ({ 
-        ...prev, 
-        error: err.message || "이미지 생성 실패", 
-        loading: false 
-      }));
-    }
+  const handleGenerate = () => {
+    setPromptUsed(constructPrompt());
   };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(result.promptUsed);
+    navigator.clipboard.writeText(promptUsed);
   };
 
   return (
@@ -177,19 +112,8 @@ const App: React.FC = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-white">나노 실루엣 스튜디오</h1>
-              <p className="text-xs text-slate-400">Powered by Gemini 2.5 Flash Image</p>
+              <p className="text-xs text-slate-400">AI Prompt Generator for Silhouette Images</p>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-             <button 
-               onClick={() => setShowApiInput(!showApiInput)}
-               className={`text-xs flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all ${
-                 apiKey ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400'
-               }`}
-             >
-               <Key className="w-3 h-3" />
-               {apiKey ? 'API 키 설정됨' : 'API 키 설정'}
-             </button>
           </div>
         </div>
       </header>
@@ -199,53 +123,6 @@ const App: React.FC = () => {
           
           {/* Left Column: Controls */}
           <div className="lg:col-span-4 space-y-6">
-            
-            {/* API Key Section - Collapsible */}
-            {showApiInput && (
-              <div className="bg-slate-900 rounded-2xl p-6 border border-indigo-500/30 shadow-xl animate-fadeIn">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                    <Key className="w-4 h-4 text-indigo-400" />
-                    API 키 설정
-                  </h3>
-                  <button
-                    onClick={() => setShowApiInput(false)}
-                    className="text-slate-400 hover:text-slate-300 text-xs"
-                  >
-                    닫기
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  <input 
-                    type="password"
-                    value={apiKey}
-                    onChange={(e) => handleApiKeyChange(e.target.value)}
-                    placeholder="Gemini API 키를 입력하세요"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm placeholder-slate-500"
-                  />
-                  
-                  <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer hover:text-slate-300">
-                      <input 
-                        type="checkbox" 
-                        checked={rememberKey}
-                        onChange={toggleRememberKey}
-                        className="rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      브라우저에 키 기억하기
-                    </label>
-                    <a 
-                      href="https://aistudio.google.com/app/apikey" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-xs flex items-center gap-1 text-indigo-400 hover:text-indigo-300 underline underline-offset-2"
-                    >
-                      키 발급받기 <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                </div>
-              </div>
-            )}
 
             <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl">
               <h2 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
@@ -396,18 +273,9 @@ const App: React.FC = () => {
 
                 <button 
                   type="submit"
-                  disabled={result.loading}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-indigo-900/30 transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-indigo-900/30 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
                 >
-                  {result.loading ? (
-                    <>
-                      <RefreshCw className="w-5 h-5 animate-spin" /> 생성 중...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-5 h-5" /> 실루엣 생성하기
-                    </>
-                  )}
+                  <Sparkles className="w-5 h-5" /> 프롬프트 생성하기
                 </button>
               </form>
             </div>
@@ -416,64 +284,18 @@ const App: React.FC = () => {
           {/* Right Column: Preview & Result */}
           <div className="lg:col-span-8 flex flex-col gap-6">
             
-            {/* Image Display Area */}
-            <div className="relative aspect-video bg-slate-900 rounded-2xl border-2 border-dashed border-slate-800 flex items-center justify-center overflow-hidden shadow-2xl group">
-              {result.imageUrl ? (
-                <>
-                  <img 
-                    src={result.imageUrl} 
-                    alt="생성된 실루엣" 
-                    className="w-full h-full object-contain bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] bg-slate-800" 
-                  />
-                  <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                     <a 
-                      href={result.imageUrl} 
-                      download={`silhouette-${Date.now()}.png`}
-                      className="bg-slate-900/80 hover:bg-black text-white p-2 rounded-lg backdrop-blur-sm border border-slate-700 flex items-center gap-2 text-xs font-bold"
-                    >
-                      <Download className="w-4 h-4" /> 다운로드
-                    </a>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center text-slate-600">
-                  {result.loading ? (
-                    <div className="flex flex-col items-center gap-4">
-                      <div className="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
-                      <p className="animate-pulse">실루엣을 만드는 중입니다...</p>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2">
-                       <Palette className="w-12 h-12 mb-2 opacity-50" />
-                       <p className="font-medium">준비 완료</p>
-                       <p className="text-sm">왼쪽에서 설정을 완료하고 생성 버튼을 누르세요</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Prompt View & Error Handling */}
-            {result.error && (
-              <div className="bg-red-900/20 border border-red-800 text-red-200 p-4 rounded-xl flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <h4 className="font-bold text-sm mb-1">생성 실패</h4>
-                  <p className="text-sm opacity-90 whitespace-pre-line leading-relaxed">{result.error}</p>
-                  {result.error.includes("할당량") && (
-                    <a 
-                      href="https://ai.google.dev/gemini-api/docs/quota" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 mt-2 text-xs text-red-300 hover:text-red-100 underline underline-offset-2"
-                    >
-                      할당량 정보 확인하기 <ExternalLink className="w-3 h-3" />
-                    </a>
-                  )}
+            {/* Preview Area */}
+            <div className="relative aspect-video bg-slate-900 rounded-2xl border-2 border-dashed border-slate-800 flex items-center justify-center overflow-hidden shadow-2xl">
+              <div className="text-center text-slate-600">
+                <div className="flex flex-col items-center gap-2">
+                   <Palette className="w-12 h-12 mb-2 opacity-50" />
+                   <p className="font-medium">프롬프트 생성기</p>
+                   <p className="text-sm">왼쪽에서 설정을 완료하고 생성 버튼을 누르세요</p>
                 </div>
               </div>
-            )}
+            </div>
 
+            {/* Prompt Display */}
             <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">생성된 프롬프트 (영어)</h3>
@@ -485,7 +307,7 @@ const App: React.FC = () => {
                 </button>
               </div>
               <div className="bg-black/30 rounded-lg p-4 font-mono text-xs text-slate-300 leading-relaxed border border-slate-800/50">
-                {result.promptUsed}
+                {promptUsed || '설정을 변경하면 프롬프트가 자동으로 생성됩니다.'}
               </div>
             </div>
 
@@ -500,8 +322,8 @@ const App: React.FC = () => {
                 <p className="text-xs text-slate-500">고대비 단색 배경으로 '마법봉' 툴로 쉽게 누끼를 딸 수 있습니다.</p>
               </div>
               <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800/50">
-                <h4 className="text-indigo-400 font-bold text-sm mb-1">나노 바나나</h4>
-                <p className="text-xs text-slate-500">Gemini 2.5 Flash Image 모델을 사용하여 빠르고 정확합니다.</p>
+                <h4 className="text-indigo-400 font-bold text-sm mb-1">AI 프롬프트</h4>
+                <p className="text-xs text-slate-500">생성된 프롬프트를 복사하여 AI 이미지 생성 도구에 사용하세요.</p>
               </div>
             </div>
 
