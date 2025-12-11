@@ -457,9 +457,19 @@ const App: React.FC = () => {
             {result.error && (
               <div className="bg-red-900/20 border border-red-800 text-red-200 p-4 rounded-xl flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-bold text-sm">생성 실패</h4>
-                  <p className="text-sm opacity-80">{result.error}</p>
+                <div className="flex-1">
+                  <h4 className="font-bold text-sm mb-1">생성 실패</h4>
+                  <p className="text-sm opacity-90 whitespace-pre-line leading-relaxed">{result.error}</p>
+                  {result.error.includes("할당량") && (
+                    <a 
+                      href="https://ai.google.dev/gemini-api/docs/quota" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 mt-2 text-xs text-red-300 hover:text-red-100 underline underline-offset-2"
+                    >
+                      할당량 정보 확인하기 <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
                 </div>
               </div>
             )}
